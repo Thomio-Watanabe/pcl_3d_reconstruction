@@ -2,10 +2,10 @@
 #include <pcl/io/pcd_io.h>
 #include <pcl/io/ply_io.h>
 #include <pcl/console/parse.h>
-#include <pcl/filters/statistical_outlier_removal.h>
 #include <boost/thread/thread.hpp>
 #include <pcl/visualization/pcl_visualizer.h>
-
+#include <pcl/filters/statistical_outlier_removal.h>
+#include <pcl/surface/mls.h>
 
 // This function displays the help
 void showHelp(char *program_name)
@@ -59,30 +59,52 @@ int main(int argc, char** argv)
         }
     }
 
-	// Filter object
-	pcl::StatisticalOutlierRemoval<pcl::PointXYZRGB> filter;
-	filter.setInputCloud(cloud);
-	
+	// Statistical filter object
+	pcl::StatisticalOutlierRemoval<pcl::PointXYZRGB> statisticalFilter;
+	statisticalFilter.setInputCloud(cloud);
+
 	// Every point must have 10 neighbors within 15cm, or it will be removed
     int meanK = 50;
     meanK = atoi(argv[2]);
     std::cout << "Loading filter meanK value = " << meanK << std::endl;
-    filter.setMeanK( meanK );
+    statisticalFilter.setMeanK( meanK );
 
     float stdDevMulThresh = 1.0;
     stdDevMulThresh = atof( argv[3] );
     std::cout << "Loading filter stdDevMulThresh value = " << stdDevMulThresh << std::endl;
-    filter.setStddevMulThresh( stdDevMulThresh );
-
-
+    statisticalFilter.setStddevMulThresh( stdDevMulThresh );
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr filteredCloud(new pcl::PointCloud<pcl::PointXYZRGB>);
-    filter.filter(*filteredCloud);
+    statisticalFilter.filter(*filteredCloud);
 
-    // Visualize them.
-    boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer(new pcl::visualization::PCLVisualizer("Outlier removal"));
-    pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> rgb(filteredCloud);
-    viewer->addPointCloud(filteredCloud,rgb, "filteredCloud");
-    // Display one normal out of 20, as a line of length 3cm.
+
+    // Smoothing and normal estimation based on polynomial reconstruction
+    // http://pointclouds.org/documentation/tutorials/resampling.php#moving-least-squares
+    //  attempts to recreate the missing parts of the surface by higher order polynomial interpolations 
+    // Init object
+    pcl::MovingLeastSquares<pcl::PointXYZRGB, pcl::PointXYZRGB> mls;
+    mls.setComputeNormals(true);
+
+    // Set parameters
+    mls.setInputCloud(filteredCloud);
+    mls.setPolynomialFit(true);
+    pcl::search::KdTree<pcl::PointXYZRGB>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZRGB>);
+    mls.setSearchMethod(tree);
+
+    float kdtreeRadius = 0.4;
+    kdtreeRadius = atof(argv[4]);
+    std::cout << "Loading kdtree radius value = " << kdtreeRadius << std::endl;
+    mls.setSearchRadius(kdtreeRadius);
+
+    // Reconstruct
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr outputCloud (new pcl::PointCloud<pcl::PointXYZRGB>);
+    mls.process(*outputCloud);
+
+
+    // Visualize the output point cloud
+    boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer(new pcl::visualization::PCLVisualizer("Smoothed cloud"));
+    pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> rgb(outputCloud);
+    viewer->addPointCloud(outputCloud,rgb,"smoothed cloud");
+
     while (!viewer->wasStopped())
     {
         viewer->spinOnce(100);

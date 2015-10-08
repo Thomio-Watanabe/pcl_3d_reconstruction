@@ -1,1 +1,1 @@
-./statistical_outlier_removal ../../underwater/master_foot_15fps/cropped/dense_master_foot.0.ply 1000 .050
+./statistical_outlier_removal ../../underwater/master_foot_15fps/cropped/dense_master_foot.0.ply 500 .05 1.0
