@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
  
-project(PCL_statistical_outlier_removal)
+project(PCL_3d_reconstruction)
  
 find_package(PCL 1.7 REQUIRED)
 include_directories(${PCL_INCLUDE_DIRS})
@@ -10,5 +10,5 @@ add_definitions(${PCL_DEFINITIONS})
 # set(PCL_BUILD_TYPE Release)
 #file(GLOB PCL_openni_viewer_SRC "src/*.h" "src/*.cpp")
 
-add_executable(statistical_outlier_removal main.cpp)
-target_link_libraries (statistical_outlier_removal ${PCL_LIBRARIES})
+add_executable(3d_reconstruction src/main.cpp src/Reconstruct.cpp)
+target_link_libraries (3d_reconstruction ${PCL_LIBRARIES})
