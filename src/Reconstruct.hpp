@@ -12,20 +12,20 @@
 
 namespace reconstruction{
     class Reconstruct{
-        private:
-            // Source RGB point cloud
-            pcl::PointCloud<pcl::PointXYZRGB>::Ptr sourceCloud;
-
         public:
+            typedef std::vector< std::pair<std::string,pcl::PointCloud<pcl::PointXYZRGB>::Ptr> > CloudContainer;
+
             Reconstruct();
 
             void showHelp(char *programName);
 
-            void openPCL(int argc, char** argv);
+            void openPCL(int argc, char** argv,
+                    pcl::PointCloud<pcl::PointXYZRGB>::Ptr sourceCloud);
 
             void statisticalFilter(
                     int meanK,
                     float stdDevMulThresh,
+                    pcl::PointCloud<pcl::PointXYZRGB>::Ptr sourceCloud,
                     pcl::PointCloud<pcl::PointXYZRGB>::Ptr filteredCloud);
 
             void polynomialInterpolation(
@@ -33,11 +33,8 @@ namespace reconstruction{
                     pcl::PointCloud<pcl::PointXYZRGB>::Ptr filteredCloud,
                     pcl::PointCloud<pcl::PointXYZRGB>::Ptr smoothedCloud);
 
-            void visualizeCloud(
-                    pcl::PointCloud<pcl::PointXYZRGB>::Ptr outputCloud,
-                    std::string windowTitle);
+            void visualizeClouds(CloudContainer outputClouds);
     };
 }
-
 
 #endif

@@ -1,4 +1,3 @@
-
 #include "Reconstruct.hpp"
 
 #include <boost/thread/thread.hpp>
@@ -14,8 +13,7 @@ using namespace pcl;
 using namespace std;
 using namespace reconstruction;
 
-Reconstruct::Reconstruct():
-    sourceCloud(new PointCloud<PointXYZRGB> ())
+Reconstruct::Reconstruct()
 {}
 
 
@@ -26,7 +24,7 @@ void Reconstruct::showHelp(char *programName){
 }
 
 
-void Reconstruct::openPCL(int argc, char** argv){
+void Reconstruct::openPCL(int argc, char** argv, PointCloud<PointXYZRGB>::Ptr sourceCloud){
     // Fetch point cloud filename in arguments | Works with PCD and PLY files
     vector<int> filenames;
     bool file_is_pcd = false;
@@ -62,8 +60,11 @@ void Reconstruct::openPCL(int argc, char** argv){
 
 
 void Reconstruct::statisticalFilter(int meanK,float stdDevMulThresh,
+    PointCloud<PointXYZRGB>::Ptr sourceCloud,
     PointCloud<PointXYZRGB>::Ptr filteredCloud)
 {
+    cout << "-- Reconstruct: running statistical filter. "<< endl;
+
 	// Statistical filter object
 	StatisticalOutlierRemoval<PointXYZRGB> statisticalFilter;
 	statisticalFilter.setInputCloud(sourceCloud);
@@ -81,6 +82,9 @@ void Reconstruct::statisticalFilter(int meanK,float stdDevMulThresh,
 void Reconstruct::polynomialInterpolation(float kdtreeRadius,
             PointCloud<PointXYZRGB>::Ptr filteredCloud,
             PointCloud<PointXYZRGB>::Ptr smoothedCloud){
+
+    cout << "-- Reconstruct: running polynomial interpolation. "<< endl;
+
     // http://pointclouds.org/documentation/tutorials/resampling.php#moving-least-squares
     // attempts to recreate the missing parts of the surface by higher order polynomial interpolations 
     // Init object
@@ -90,14 +94,20 @@ void Reconstruct::polynomialInterpolation(float kdtreeRadius,
     // Set parameters
     mls.setInputCloud(filteredCloud);
     mls.setPolynomialFit(true);
-    mls.setPolynomialOrder(2);
+    int polynomialOrder = 2;
+    cout << "-- Reconstruct: set polynomial order = " << polynomialOrder << endl;
+    mls.setPolynomialOrder(polynomialOrder);
 
 
     // SAMPLE_LOCAL_PLANE   RANDOM_UNIFORM_DENSITY VOXEL_GRID_DILATION
     mls.setUpsamplingMethod(MovingLeastSquares<PointXYZRGB, PointXYZRGB>::SAMPLE_LOCAL_PLANE);
     mls.setUpsamplingMethod(MovingLeastSquares<PointXYZRGB, PointXYZRGB>::RANDOM_UNIFORM_DENSITY);
-    mls.setUpsamplingRadius(0.10);
-    mls.setUpsamplingStepSize(0.03);
+    float upsamplingRadius = 0.10;
+    float upsamplingStepSize = 0.03;
+    cout << "-- Reconstruct: set upsampling radius = " << upsamplingRadius << endl;
+    cout << "-- Reconstruct: set upsampling step size = " << upsamplingStepSize << endl;
+    mls.setUpsamplingRadius(upsamplingRadius);
+    mls.setUpsamplingStepSize(upsamplingStepSize);
     // add multiple threads ??
 
     search::KdTree<PointXYZRGB>::Ptr tree (new search::KdTree<PointXYZRGB>);
@@ -110,19 +120,33 @@ void Reconstruct::polynomialInterpolation(float kdtreeRadius,
 }
 
 
-void Reconstruct::visualizeCloud(PointCloud<PointXYZRGB>::Ptr outputCloud, string windowTitle){
-    // Visualize the output point cloud
-    boost::shared_ptr<visualization::PCLVisualizer> viewer(new visualization::PCLVisualizer( windowTitle ));
-    visualization::PointCloudColorHandlerRGBField<PointXYZRGB> rgb(outputCloud);
-    viewer->addPointCloud(outputCloud,rgb, windowTitle);
+void Reconstruct::visualizeClouds(CloudContainer outputClouds)
+{
+   // Visualize the output point cloud
+    cout << "-- Reconstruct: rendering point clouds. " << endl;
+    cout << "-- Reconstruct: press \"q\" to quit. " << endl;
 
-    while (!viewer->wasStopped())
-    {
-        viewer->spinOnce(100);
-        boost::this_thread::sleep(boost::posix_time::microseconds(100000));
+    typedef boost::shared_ptr<visualization::PCLVisualizer> PCLVisualizer;
+    vector<PCLVisualizer> visualizerContainer;
+    PCLVisualizer viewer;
+
+    for(CloudContainer::iterator it =  outputClouds.begin(); it != outputClouds.end(); ++it ){
+        viewer = boost::shared_ptr<visualization::PCLVisualizer> (new visualization::PCLVisualizer( it->first ));
+        visualization::PointCloudColorHandlerRGBField<PointXYZRGB> rgb( it->second );
+        viewer->addPointCloud( it->second, rgb, it->first);
+        visualizerContainer.push_back(viewer);
+    }
+
+    bool visualize = true;
+    while(visualize){
+        for(vector<PCLVisualizer>::iterator it =  visualizerContainer.begin(); it != visualizerContainer.end(); ++it ){
+            (*it)->spinOnce(100);       // Calls the interactor and updates the screen once.
+            if( (*it)->wasStopped() )
+                visualize = false;
+        }
+//        boost::this_thread::sleep(boost::posix_time::microseconds(100000));
     }
 }
-
 
 
 

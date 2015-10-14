@@ -12,24 +12,26 @@ int main(int argc, char** argv)
     reconstruction::Reconstruct underwaterReconstruction;
 
     // Open Point Cloud file
-    underwaterReconstruction.openPCL(argc,argv);
+    PointCloud<PointXYZRGB>::Ptr sourceCloud(new PointCloud<PointXYZRGB>);
+    underwaterReconstruction.openPCL(argc,argv,sourceCloud);
 
     // Filtering statistically
     int meanK = atoi(argv[2]);
     float stdDevMulThresh = atof(argv[3]);
     PointCloud<PointXYZRGB>::Ptr filteredCloud(new PointCloud<PointXYZRGB>);
-    underwaterReconstruction.statisticalFilter(meanK,stdDevMulThresh,filteredCloud);
-
-    underwaterReconstruction.visualizeCloud(filteredCloud,string("Filtered Cloud"));
-
+    underwaterReconstruction.statisticalFilter(meanK,stdDevMulThresh,sourceCloud,filteredCloud);
 
     // Smoothing and normal estimation based on polynomial
     float kdtreeRadius = atof(argv[4]);
     PointCloud<PointXYZRGB>::Ptr smoothedCloud(new PointCloud<PointXYZRGB>);
     underwaterReconstruction.polynomialInterpolation(kdtreeRadius,filteredCloud,smoothedCloud);
 
-    underwaterReconstruction.visualizeCloud(smoothedCloud,string("Smoothed Cloud"));
+    // Visualize clouds
+    reconstruction::Reconstruct::CloudContainer outputClouds;
+    outputClouds.push_back( make_pair(string("Source Cloud"),sourceCloud) );
+    outputClouds.push_back( make_pair(string("Filtered Cloud"),filteredCloud) );
+    outputClouds.push_back( make_pair(string("Smoothed Cloud"),smoothedCloud) );
+    underwaterReconstruction.visualizeClouds(outputClouds);
 
     return 0;
 }
-
