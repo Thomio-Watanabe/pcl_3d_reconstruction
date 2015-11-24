@@ -8,7 +8,6 @@
 #include <pcl/filters/statistical_outlier_removal.h>
 #include <pcl/surface/mls.h>
 
-
 using namespace pcl;
 using namespace std;
 using namespace reconstruction;
@@ -59,6 +58,18 @@ void Reconstruct::openPCL(int argc, char** argv, PointCloud<PointXYZRGB>::Ptr so
 }
 
 
+void Reconstruct::savePCL(string pclName, PointCloud<PointXYZRGB>::Ptr outputCloud){
+        if ( pclName.find(".ply") ){
+            io::savePLYFileBinary(pclName,*outputCloud);
+        } else if ( pclName.find(".pcd") ){
+            io::savePCDFileBinary(pclName,*outputCloud);
+        } else{
+            cout << "-- Reconstruct: FAIL --> Output format is not .ply or .pcd" << endl;
+        }
+        
+}
+
+
 void Reconstruct::statisticalFilter(int meanK,float stdDevMulThresh,
     PointCloud<PointXYZRGB>::Ptr sourceCloud,
     PointCloud<PointXYZRGB>::Ptr filteredCloud)
@@ -100,7 +111,7 @@ void Reconstruct::polynomialInterpolation(float kdtreeRadius,
 
 
     // SAMPLE_LOCAL_PLANE   RANDOM_UNIFORM_DENSITY VOXEL_GRID_DILATION
-    mls.setUpsamplingMethod(MovingLeastSquares<PointXYZRGB, PointXYZRGB>::SAMPLE_LOCAL_PLANE);
+//    mls.setUpsamplingMethod(MovingLeastSquares<PointXYZRGB, PointXYZRGB>::SAMPLE_LOCAL_PLANE);
     mls.setUpsamplingMethod(MovingLeastSquares<PointXYZRGB, PointXYZRGB>::RANDOM_UNIFORM_DENSITY);
     float upsamplingRadius = 0.10;
     float upsamplingStepSize = 0.03;
@@ -118,7 +129,6 @@ void Reconstruct::polynomialInterpolation(float kdtreeRadius,
 
     mls.process(*smoothedCloud);
 }
-
 
 void Reconstruct::visualizeClouds(CloudContainer outputClouds)
 {

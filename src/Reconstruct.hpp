@@ -14,13 +14,16 @@ namespace reconstruction{
     class Reconstruct{
         public:
             typedef std::vector< std::pair<std::string,pcl::PointCloud<pcl::PointXYZRGB>::Ptr> > CloudContainer;
-
+            
             Reconstruct();
 
             void showHelp(char *programName);
 
             void openPCL(int argc, char** argv,
                     pcl::PointCloud<pcl::PointXYZRGB>::Ptr sourceCloud);
+
+            void savePCL(std::string pclName,
+                    pcl::PointCloud<pcl::PointXYZRGB>::Ptr outputCloud);
 
             void statisticalFilter(
                     int meanK,

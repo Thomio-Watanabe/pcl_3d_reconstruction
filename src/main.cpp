@@ -1,9 +1,6 @@
 
 #include "Reconstruct.hpp"
 
-// This 3d reconstruction implementation is intended to reconstruct 3d models
-// with point clouds generated in underwater environments.
-
 using namespace pcl;
 using namespace std;
 
@@ -16,15 +13,18 @@ int main(int argc, char** argv)
     underwaterReconstruction.openPCL(argc,argv,sourceCloud);
 
     // Filtering statistically
-    int meanK = atoi(argv[2]);
-    float stdDevMulThresh = atof(argv[3]);
+    int meanK = 500;    // atoi(argv[2]);
+    float stdDevMulThresh = 0.001;   // atof(argv[3]); % default = 0.05
     PointCloud<PointXYZRGB>::Ptr filteredCloud(new PointCloud<PointXYZRGB>);
     underwaterReconstruction.statisticalFilter(meanK,stdDevMulThresh,sourceCloud,filteredCloud);
 
     // Smoothing and normal estimation based on polynomial
-    float kdtreeRadius = atof(argv[4]);
+    float kdtreeRadius = 1.0; // atof(argv[4]); % default = 1.0
     PointCloud<PointXYZRGB>::Ptr smoothedCloud(new PointCloud<PointXYZRGB>);
     underwaterReconstruction.polynomialInterpolation(kdtreeRadius,filteredCloud,smoothedCloud);
+
+    // Save smoothed cloud
+    underwaterReconstruction.savePCL("smoothedCloud.ply",smoothedCloud);
 
     // Visualize clouds
     reconstruction::Reconstruct::CloudContainer outputClouds;
